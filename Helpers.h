@@ -80,8 +80,16 @@ Matrix4 getCameraTransformationMatrix(Camera*);
 
 Matrix4 getOrthographicProjectionTransformationMatrix(Camera * camera);
 
+Matrix4 getPerspectiveProjectionTransformationMatrix(Camera * camera);
+
 bool visible(double den, double num, double &tE, double &tL);
 
-bool clip(double xMax, double xMin, double yMax, double yMin, double zMax, double zMin, Vec4 &vec1, Vec4 &vec2, Color &color1, Color &color2);
+bool clip(double xMax, double xMin, double yMax, double yMin, double zMax, double zMin, Vec4 &vec1, Vec4 &vec2, Color* color1, Color* color2);
+
+Matrix4 getModelingTransformationMatrix(Camera*, Mesh*, Scene*);
+
+Matrix4 getCumulativeTransformations(Matrix4&, Matrix4&, Matrix4&);
+
+bool isCulled(Vec4* transformedArray);
 
 #endif

@@ -13,6 +13,7 @@ public:
 
     Scaling();
     Scaling(int scalingId, double sx, double sy, double sz);
+    Matrix4 getScalingMatrix();
     friend ostream &operator<<(ostream &os, const Scaling &s);
 };
 

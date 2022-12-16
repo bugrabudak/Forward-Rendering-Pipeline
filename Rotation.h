@@ -2,6 +2,7 @@
 #define __ROTATION_H__
 
 #include <iostream>
+#include "Matrix4.h"
 
 using namespace std;
 
@@ -13,6 +14,7 @@ public:
 
     Rotation();
     Rotation(int rotationId, double angle, double x, double y, double z);
+    Matrix4* getRotationMatrices();
     friend ostream &operator<<(ostream &os, const Rotation &r);
 };
 

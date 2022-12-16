@@ -4,7 +4,6 @@
 #include <cstring>
 #include <fstream>
 #include <cmath>
-
 #include "Scene.h"
 #include "Camera.h"
 #include "Color.h"
@@ -29,8 +28,83 @@ void Scene::forwardRenderingPipeline(Camera *camera)
 	// TODO: Implement this function.
 	Matrix4 viewportTransformation = getViewportTransformationMatrix(camera);
 	Matrix4 cameraTransformation = getCameraTransformationMatrix(camera);
-	Matrix4 ortographicTransformationMatrix = getOrtographicProjectionTransformationMatrix(camera);
-	
+	Matrix4 projectionMatrix;
+	if (camera->projectionType == 1) {
+		projectionMatrix = getPerspectiveProjectionTransformationMatrix(camera);
+	} else {
+		projectionMatrix = getOrthographicProjectionTransformationMatrix(camera);
+	}
+
+	for (auto& mesh : this->meshes) {
+		Matrix4 modelingTransformationMatrix = getModelingTransformationMatrix(camera, mesh, this);
+		Matrix4 cumulativeTransformations = getCumulativeTransformations(modelingTransformationMatrix, cameraTransformation, projectionMatrix);
+		
+		for (auto& triangle : mesh->triangles) {
+			Vec3* vertexArray[3] = {
+				this->vertices[triangle.getFirstVertexId() - 1],
+				this->vertices[triangle.getSecondVertexId() - 1],
+				this->vertices[triangle.getThirdVertexId() - 1]
+			};
+
+			Color* colorArray[3] = {
+				this->colorsOfVertices[vertexArray[0]->colorId - 1],
+				this->colorsOfVertices[vertexArray[1]->colorId - 1],
+				this->colorsOfVertices[vertexArray[2]->colorId - 1]
+			};
+
+			Vec4 transformedArray[3];
+
+			for (int i = 0; i < 3; i++) {
+				transformedArray[i] = multiplyMatrixWithVec4(cumulativeTransformations, Vec4(vertexArray[i]->x, vertexArray[i]->y, vertexArray[i]->z, 1, vertexArray[i]->colorId));
+				double t = transformedArray[i].t;
+				transformedArray[i] = Vec4(transformedArray[i].x / t,
+											transformedArray[i].y / t,
+											transformedArray[i].z / t,
+											transformedArray[i].t / t,
+											transformedArray[i].colorId);
+			}
+
+			// Culling
+			if (this->cullingEnabled && isCulled(transformedArray)) {
+                continue;
+            }
+
+
+			bool isWireframe = mesh->type == 0;
+
+			if (isWireframe) {
+				bool visibilityArray[3];
+				for (int i = 0; i < 3; i++) {
+					
+					visibilityArray[i] = clip(1, -1, 1, -1, 1, -1,
+						transformedArray[i],(i == 2 ? transformedArray[0] : transformedArray[i + 1]),
+						colorArray[i],(i == 2 ? colorArray[0] : colorArray[i + 1]));
+				}
+
+				Vec4 projectedArray[3];
+
+				for (int i = 0; i < 3; i++) {
+					projectedArray[i] = multiplyMatrixWithVec4(viewportTransformation,transformedArray[i]);
+				}
+
+				for (int i = 0; i < 3; i++) {
+					if( visibilityArray[i]) {
+						//rasterization
+					}
+				}
+
+			} else {
+				Vec4 projectedArray[3];
+
+				for (int i = 0; i < 3; i++) {
+					projectedArray[i] = multiplyMatrixWithVec4(viewportTransformation,transformedArray[i]);
+				}
+
+				// rasterize triangle
+
+			}
+		}
+	}
 
 }
 

@@ -6,6 +6,10 @@
 #include "Vec4.h"
 #include "Camera.h"
 #include "Color.h"
+#include "Mesh.h"
+#include "Translation.h"
+#include "Scaling.h"
+#include "Rotation.h"
 
 using namespace std;
 
@@ -187,6 +191,7 @@ Matrix4 multiplyMatrixWithMatrix(Matrix4 m1, Matrix4 m2)
 /*
  * Multiply matrix m (Matrix4) with vector v (vec4) and store the result in vector r (vec4).
  */
+
 Vec4 multiplyMatrixWithVec4(Matrix4 m, Vec4 v)
 {
     double values[4];
@@ -203,6 +208,33 @@ Vec4 multiplyMatrixWithVec4(Matrix4 m, Vec4 v)
     }
 
     return Vec4(values[0], values[1], values[2], values[3], v.colorId);
+}
+
+Matrix4 getCumulativeTransformations(Matrix4& modeling, Matrix4& cameraT, Matrix4& projection) {
+    return multiplyMatrixWithMatrix(projection, multiplyMatrixWithMatrix(cameraT, modeling));
+}
+
+Matrix4 getModelingTransformationMatrix(Camera* camera, Mesh* mesh, vector<Translation*>& translations, vector<Scaling*>& scalings, vector<Rotation*>& rotations) {
+    Matrix4 result = getIdentityMatrix();
+    for (int i = 0; i < mesh->numberOfTransformations; i++) {
+        char type = mesh->transformationTypes[i];
+        int transformationID = mesh->transformationIds[i];
+        
+        if (type == 't') {
+            Matrix4 translationMatrix = translations[i - 1]->getTranslationMatrix();
+            result = multiplyMatrixWithMatrix(translationMatrix, result);
+        } else if (type == 'r') {
+            // Transformation matrix is 0th, rotation is 1st and transformation inverse is the 2nd element.
+            Matrix4* rotationMatrices = rotations[i - 1]->getRotationMatrices();
+            Matrix4 r1 = multiplyMatrixWithMatrix(rotationMatrices[1], rotationMatrices[0]);
+            Matrix4 r2 = multiplyMatrixWithMatrix(rotationMatrices[2], r1);
+            result = multiplyMatrixWithMatrix(r2, result);
+        } else {
+            Matrix4 scalingMatrix = scalings[i - 1]->getScalingMatrix();
+            result = multiplyMatrixWithMatrix(scalingMatrix, result);
+        }
+    }
+    return result;
 }
 
 Matrix4 getViewportTransformationMatrix(Camera * camera) {
@@ -291,7 +323,7 @@ bool visible(double den, double num, double &tE, double &tL){
 }
 
 bool clip(double xMax, double xMin, double yMax, double yMin, double zMax, double zMin, 
-          Vec4 &vec1, Vec4 &vec2, Color &color1, Color &color2){
+          Vec4 &vec1, Vec4 &vec2, Color *color1, Color *color2){
     double dX, dY, dZ;
     double tE = 0;
     double tL = 1;
@@ -301,7 +333,7 @@ bool clip(double xMax, double xMin, double yMax, double yMin, double zMax, doubl
     dY = vec2.y - vec1.y;
     dZ = vec2.z - vec1.z;
 
-    Color dColor = Color(color2.r - color1.r,color2.g - color1.g, color2.b - color1.b);
+    Color dColor = Color(color2->r - color1->r,color2->g - color1->g, color2->b - color1->b);
 
     if (visible(dX, xMin - vec1.x, tE, tL) && visible(-dX, vec1.x - xMax, tE, tL) &&
         visible(dY, yMin - vec1.y, tE, tL) && visible(-dY, vec1.y - yMax, tE, tL) && 
@@ -311,27 +343,39 @@ bool clip(double xMax, double xMin, double yMax, double yMin, double zMax, doubl
             vec2.x = vec1.x + dX * tL;
             vec2.y = vec1.y + dY * tL;
             vec2.z = vec1.z + dZ * tL;
-            double newR = color1.r + (dColor.r * tL);
-            double newG = color1.g + (dColor.g * tL);
-            double newB = color1.b + (dColor.b * tL);
-            color2.r = newR;
-            color2.g = newG;
-            color2.b= newB;
+            double newR = color1->r + (dColor.r * tL);
+            double newG = color1->g + (dColor.g * tL);
+            double newB = color1->b + (dColor.b * tL);
+            color2->r = newR;
+            color2->g = newG;
+            color2->b= newB;
         }
         if (tE > 0){
             vec1.x = vec1.x + dX * tE;
             vec1.y = vec1.y + dY * tE;
             vec1.z = vec1.z + dZ * tE;
 
-            double newR = color1.r + (dColor.r * tE);
-            double newG = color1.g + (dColor.g * tE);
-            double newB = color1.b + (dColor.b * tE);
-            color1.r = newR;
-            color1.g = newG;
-            color1.b= newB;
+            double newR = color1->r + (dColor.r * tE);
+            double newG = color1->g + (dColor.g * tE);
+            double newB = color1->b + (dColor.b * tE);
+            color1->r = newR;
+            color1->g = newG;
+            color1->b= newB;
         }
         isVisible = true;
     }
 
     return isVisible;
+}
+
+bool isCulled(Vec4* transformedArray) {
+    Vec3 v_1 = Vec3(transformedArray[0].x, transformedArray[0].y, transformedArray[0].z, -1);
+    Vec3 v_2 = Vec3(transformedArray[1].x, transformedArray[1].y, transformedArray[1].z, -1);
+    Vec3 v_3 = Vec3(transformedArray[2].x, transformedArray[2].y, transformedArray[2].z, -1);
+
+    Vec3 edge12 = subtractVec3(v_2, v_1);
+    Vec3 edge13 = subtractVec3(v_3, v_1);
+    Vec3 triangleNormal = normalizeVec3(crossProductVec3(edge12, edge13));
+
+    return dotProductVec3(triangleNormal, v_1) < 0;
 }
