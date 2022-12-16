@@ -36,7 +36,7 @@ void Scene::forwardRenderingPipeline(Camera *camera)
 	}
 
 	for (auto& mesh : this->meshes) {
-		Matrix4 modelingTransformationMatrix = getModelingTransformationMatrix(camera, mesh, this);
+		Matrix4 modelingTransformationMatrix = getModelingTransformationMatrix(camera, mesh, this->translations, this->scalings, this->rotations);
 		Matrix4 cumulativeTransformations = getCumulativeTransformations(modelingTransformationMatrix, cameraTransformation, projectionMatrix);
 		
 		for (auto& triangle : mesh->triangles) {

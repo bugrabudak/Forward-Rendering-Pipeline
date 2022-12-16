@@ -86,7 +86,7 @@ bool visible(double den, double num, double &tE, double &tL);
 
 bool clip(double xMax, double xMin, double yMax, double yMin, double zMax, double zMin, Vec4 &vec1, Vec4 &vec2, Color* color1, Color* color2);
 
-Matrix4 getModelingTransformationMatrix(Camera*, Mesh*, Scene*);
+Matrix4 getModelingTransformationMatrix(Camera* camera, Mesh* mesh, vector<Translation*>& translations, vector<Scaling*>& scalings, vector<Rotation*>& rotations);
 
 Matrix4 getCumulativeTransformations(Matrix4&, Matrix4&, Matrix4&);
 
