@@ -78,6 +78,10 @@ Matrix4 getViewportTransformationMatrix(Camera*);
 
 Matrix4 getCameraTransformationMatrix(Camera*);
 
-Matrix4 getOrtographicProjectionTransformationMatrix(Camera*);
+Matrix4 getOrthographicProjectionTransformationMatrix(Camera * camera);
+
+bool visible(double den, double num, double &tE, double &tL);
+
+bool clip(double xMax, double xMin, double yMax, double yMin, double zMax, double zMin, Vec4 &vec1, Vec4 &vec2, Color &color1, Color &color2);
 
 #endif
