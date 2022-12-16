@@ -5,6 +5,7 @@
 #include "Vec3.h"
 #include "Vec4.h"
 #include "Camera.h"
+#include "Color.h"
 
 using namespace std;
 
@@ -228,4 +229,109 @@ Matrix4 getCameraTransformationMatrix(Camera * camera) {
     Matrix4 first = Matrix4(firstArray);
     Matrix4 second = Matrix4(secondArray);
     return multiplyMatrixWithMatrix(first, second);
+}
+
+Matrix4 getPerspectiveProjectionTransformationMatrix(Camera * camera) {
+    double m1 = (2*camera->near) / (camera->right - camera->left);
+    double m3 = (camera->right + camera->left) / (camera->right - camera->left);
+    double m6 = (2*camera->near) / (camera->top - camera->bottom); 
+    double m7 = (camera->top + camera->bottom) / (camera->top - camera->bottom);
+    double m10 =  -((camera->far + camera->near) / (camera->far - camera->near));
+    double m11 = -((2*camera->far*camera->near) / (camera->far - camera->near));
+
+    double perspectiveArray[4][4] = {{m1, 0, m3, 0},
+                                    {0, m6, m7, 0},
+                                    {0, 0, m10, m11},
+                                    {0, 0, -1, 0}};
+    Matrix4 perspectiveMatrix = Matrix4(perspectiveArray);
+    return perspectiveMatrix;
+}
+
+Matrix4 getOrthographicProjectionTransformationMatrix(Camera * camera) {
+    double m1 = 2 / (camera->right - camera->left);
+    double m4 = -((camera->right + camera->left) / (camera->right - camera->left));
+    double m6 = 2/(camera->top - camera->bottom);
+    double m8 = -((camera->top + camera->bottom) / (camera->top - camera->bottom));
+    double m11 = -(2/(camera->far - camera->near));
+    double m12 = -((camera->far + camera->near) / (camera->far - camera->near));
+
+    double orthographicArray[4][4] = {{m1, 0, 0, m4},
+                                        {0, m6, 0, m8},
+                                        {0, 0, m11,m12},
+                                        {0, 0, 0, 1}};
+
+    Matrix4 orthographicMatrix = Matrix4(orthographicArray);
+    return orthographicMatrix;
+}
+
+// visible code from the slides
+bool visible(double den, double num, double &tE, double &tL){
+    double t = num/den;
+
+    if (den > 0) {        
+        if (t > tL){
+            return false;
+        }
+        if (t > tE) {
+            tE = t;
+        }
+    } else if (den < 0) {    
+        if (t < tE) {
+            return false;
+        }
+        if (t < tL) {
+            tL = t;
+        }
+    }
+    else if (num > 0) {
+        return false;
+    }
+
+    return true;
+}
+
+bool clip(double xMax, double xMin, double yMax, double yMin, double zMax, double zMin, 
+          Vec4 &vec1, Vec4 &vec2, Color &color1, Color &color2){
+    double dX, dY, dZ;
+    double tE = 0;
+    double tL = 1;
+    bool isVisible = false;
+
+    dX = vec2.x - vec1.x;
+    dY = vec2.y - vec1.y;
+    dZ = vec2.z - vec1.z;
+
+    Color dColor = Color(color2.r - color1.r,color2.g - color1.g, color2.b - color1.b);
+
+    if (visible(dX, xMin - vec1.x, tE, tL) && visible(-dX, vec1.x - xMax, tE, tL) &&
+        visible(dY, yMin - vec1.y, tE, tL) && visible(-dY, vec1.y - yMax, tE, tL) && 
+        visible(dZ, zMin - vec1.z, tE, tL) && visible(-dZ, vec1.z - zMax, tE, tL)){
+
+        if (tL < 1){
+            vec2.x = vec1.x + dX * tL;
+            vec2.y = vec1.y + dY * tL;
+            vec2.z = vec1.z + dZ * tL;
+            double newR = color1.r + (dColor.r * tL);
+            double newG = color1.g + (dColor.g * tL);
+            double newB = color1.b + (dColor.b * tL);
+            color2.r = newR;
+            color2.g = newG;
+            color2.b= newB;
+        }
+        if (tE > 0){
+            vec1.x = vec1.x + dX * tE;
+            vec1.y = vec1.y + dY * tE;
+            vec1.z = vec1.z + dZ * tE;
+
+            double newR = color1.r + (dColor.r * tE);
+            double newG = color1.g + (dColor.g * tE);
+            double newB = color1.b + (dColor.b * tE);
+            color1.r = newR;
+            color1.g = newG;
+            color1.b= newB;
+        }
+        isVisible = true;
+    }
+
+    return isVisible;
 }
