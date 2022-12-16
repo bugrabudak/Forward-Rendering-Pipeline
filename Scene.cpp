@@ -27,6 +27,11 @@ using namespace std;
 void Scene::forwardRenderingPipeline(Camera *camera)
 {
 	// TODO: Implement this function.
+	Matrix4 viewportTransformation = getViewportTransformationMatrix(camera);
+	Matrix4 cameraTransformation = getCameraTransformationMatrix(camera);
+	Matrix4 ortographicTransformationMatrix = getOrtographicProjectionTransformationMatrix(camera);
+	
+
 }
 
 /*

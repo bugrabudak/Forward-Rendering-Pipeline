@@ -204,6 +204,18 @@ Vec4 multiplyMatrixWithVec4(Matrix4 m, Vec4 v)
     return Vec4(values[0], values[1], values[2], values[3], v.colorId);
 }
 
+Matrix4 getViewportTransformationMatrix(Camera * camera) {
+    double viewportArray[4][4] = {
+        { camera->horRes / 2.0, 0, 0, ((camera->horRes - 1) / 2.0) + camera->left },
+        { 0, camera->verRes / 2.0, 0, ((camera->verRes - 1) / 2.0) - camera->bottom },
+        { 0, 0, 0.5, 0.5 },
+        { 0, 0, 0, 1 }
+    };
+
+    Matrix4 viewportTransformationMatrix = Matrix4(viewportArray);
+    return viewportTransformationMatrix;
+}
+
 Matrix4 getCameraTransformationMatrix(Camera * camera) {
     double firstArray[4][4] = {{1, 0, 0, -(camera->pos.x)},
                     {0, 1, 0, -(camera->pos.y)},
