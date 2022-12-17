@@ -47,14 +47,14 @@ Matrix4* Rotation::getRotationMatrices() {
     Matrix4 arr[3];
     double smallest = std::min(this->ux, std::min(this->uy, this->uz));
     Vec3 v;
-    Vec3 u = { this->ux, this->uy, this->uz, 0 };
+    Vec3 u = Vec3(this->ux, this->uy, this->uz, 0);
 
     if (smallest == this->ux) {
-        v = { 0, -(this->uz), this->uy, 0 };
+        v = Vec3(0, -(this->uz), this->uy, 0);
     } else if (smallest == this->uy) {
-        v = { -(this->uz), 0, this->ux, 0 };
+        v =  Vec3(-(this->uz), 0, this->ux, 0);
     } else {
-        v = { -(this->uy), this->ux, 0, 0 };
+        v = Vec3(-(this->uy), this->ux, 0, 0);
     }
 
     Vec3 w = crossProduct(u, v);

@@ -2,6 +2,8 @@
 #define __SCALING_H__
 
 #include <iostream>
+#include "Matrix4.h"
+
 
 using namespace std;
 

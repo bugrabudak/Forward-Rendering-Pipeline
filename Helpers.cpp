@@ -4,12 +4,6 @@
 #include "Matrix4.h"
 #include "Vec3.h"
 #include "Vec4.h"
-#include "Camera.h"
-#include "Color.h"
-#include "Mesh.h"
-#include "Translation.h"
-#include "Scaling.h"
-#include "Rotation.h"
 
 using namespace std;
 
@@ -379,3 +373,81 @@ bool isCulled(Vec4* transformedArray) {
 
     return dotProductVec3(triangleNormal, v_1) < 0;
 }
+
+double lineEquation(Vec4 v_0, Vec4 v_1, double x, double y) {
+    return ((v_0.y - v_1.y) * x) + ((v_1.x - v_0.x) * y) + v_0.x * v_1.y - v_0.y * v_1.x;
+}
+
+void lineRasterization(vector< vector<Color> >& image, Vec4& first, Vec4& second, Color& firstColor, Color& secondColor) {
+    Vec4 v_0;
+    Vec4 v_1;
+    double slope = (second.y - first.y) / (second.x - first.x);
+    Color vertexColor;
+    Color difference;
+
+    if (abs(slope) <= 1) {
+        if (first.x > second.x) {
+            v_0 = second;
+            v_1 = first;
+            vertexColor = secondColor;
+            difference = (firstColor - secondColor) / (v_1.x - v_0.x);
+        } else {
+            v_0 = first;
+            v_1 = second;
+            vertexColor = firstColor;
+            difference = (secondColor - firstColor) / (v_1.x - v_0.x);
+        }
+        
+        int y = v_0.y;
+        if (v_1.y > v_0.y) {
+            for (int x = v_0.x; x < v_1.x; x++) {
+                image[x][y] = vertexColor;
+                if (lineEquation(v_0, v_1, x + 1, y + 0.5) < 0) {
+                    y++;
+                }
+                vertexColor = vertexColor + difference;
+            }
+        } else {
+            for (int x = v_0.x; x < v_1.x; x++) {
+                image[x][y] = vertexColor;
+                if (lineEquation(v_0, v_1, x + 1, y - 0.5) < 0) {
+                    y--;
+                }
+                vertexColor = vertexColor + difference;
+            }
+        }
+
+    } else {
+        if (first.y > second.y) {
+            v_0 = second;
+            v_1 = first;
+            vertexColor = secondColor;
+            difference = (firstColor - secondColor) / (v_1.y - v_0.y);
+        } else {
+            v_0 = first;
+            v_1 = second;
+            vertexColor = firstColor;
+            difference = (secondColor - firstColor) / (v_1.y - v_0.y);
+        }
+        
+        int x = v_0.x;
+        if (v_1.x > v_0.x) {
+            for (int y = v_0.y; y < v_1.y; y++) {
+                image[x][y] = vertexColor;
+                if (lineEquation(v_0, v_1, x + 0.5, y + 1) < 0) {
+                    x++;
+                }
+                vertexColor = vertexColor + difference;
+            }
+        } else {
+            for (int y = v_0.y; y < v_1.y; y++) {
+                image[x][y] = vertexColor;
+                if (lineEquation(v_0, v_1, x - 0.5, y + 1) < 0) {
+                    x--;
+                }
+                vertexColor = vertexColor + difference;
+            }
+        }
+    }
+}
+

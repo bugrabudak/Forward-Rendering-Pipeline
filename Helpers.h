@@ -4,9 +4,16 @@
 #define ABS(a) ((a) > 0 ? (a) : -1 * (a))
 #define EPSILON 0.000000001
 
+#include <vector>
 #include "Matrix4.h"
 #include "Vec3.h"
 #include "Vec4.h"
+#include "Camera.h"
+#include "Color.h"
+#include "Mesh.h"
+#include "Translation.h"
+#include "Scaling.h"
+#include "Rotation.h"
 
 /*
  * Calculate cross product of vec3 a, vec3 b and return resulting vec3.
@@ -91,5 +98,7 @@ Matrix4 getModelingTransformationMatrix(Camera* camera, Mesh* mesh, vector<Trans
 Matrix4 getCumulativeTransformations(Matrix4&, Matrix4&, Matrix4&);
 
 bool isCulled(Vec4* transformedArray);
+
+void lineRasterization(std::vector< std::vector<Color> > image, Vec4 v_0, Vec4 v_1, Color c_0, Color c_1);
 
 #endif

@@ -88,8 +88,11 @@ void Scene::forwardRenderingPipeline(Camera *camera)
 				}
 
 				for (int i = 0; i < 3; i++) {
-					if( visibilityArray[i]) {
+					if (visibilityArray[i]) {
 						//rasterization
+						lineRasterization(this->image, projectedArray[i],
+						(i == 2 ? projectedArray[0] : projectedArray[i+1]), *colorArray[i],
+						(i == 2 ? *colorArray[0] : *colorArray[i + 1]));
 					}
 				}
 

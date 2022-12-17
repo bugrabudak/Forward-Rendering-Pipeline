@@ -20,6 +20,31 @@ Color::Color(const Color &other)
     this->b = other.b;
 }
 
+Color Color::operator-(Color& second) {
+    Color result;
+    result.r = this->r - second.r;
+    result.g = this->g - second.g;
+    result.b = this->b - second.b;
+    return result;
+}
+
+Color Color::operator/(double second) {
+    Color result;
+    result.r = this->r / second;
+    result.g = this->g / second;
+    result.b = this->b / second;
+    return result;
+}
+
+Color Color::operator+(Color& second) {
+    Color result;
+    result.r = this->r + second.r;
+    result.g = this->g + second.g;
+    result.b = this->b + second.b;
+    return result;
+}
+
+
 ostream& operator<<(ostream& os, const Color& c)
 {
     os << fixed << setprecision(0) << "rgb(" << c.r << ", " << c.g << ", " << c.b << ")";
