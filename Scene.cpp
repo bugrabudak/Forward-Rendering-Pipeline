@@ -28,18 +28,24 @@ void Scene::forwardRenderingPipeline(Camera *camera)
 	// TODO: Implement this function.
 	Matrix4 viewportTransformation = getViewportTransformationMatrix(camera);
 	Matrix4 cameraTransformation = getCameraTransformationMatrix(camera);
+	//cout << "Camera : \n" << cameraTransformation << endl;
+	//cout << "ViewPort : \n" << viewportTransformation << endl;
 	Matrix4 projectionMatrix;
 	if (camera->projectionType == 1) {
 		projectionMatrix = getPerspectiveProjectionTransformationMatrix(camera);
 	} else {
 		projectionMatrix = getOrthographicProjectionTransformationMatrix(camera);
 	}
-
+	//cout << "Projection : \n" << projectionMatrix << endl;
+	int q = 0;
+	int w = 0;
 	for (auto& mesh : this->meshes) {
+		w++;
 		Matrix4 modelingTransformationMatrix = getModelingTransformationMatrix(camera, mesh, this->translations, this->scalings, this->rotations);
 		Matrix4 cumulativeTransformations = getCumulativeTransformations(modelingTransformationMatrix, cameraTransformation, projectionMatrix);
-		
+		//cout << "Cum :" << i << '\n' << cumulativeTransformations << endl;
 		for (auto& triangle : mesh->triangles) {
+			q++;
 			Vec3* vertexArray[3] = {
 				this->vertices[triangle.getFirstVertexId() - 1],
 				this->vertices[triangle.getSecondVertexId() - 1],
@@ -53,7 +59,6 @@ void Scene::forwardRenderingPipeline(Camera *camera)
 			};
 
 			Vec4 transformedArray[3];
-
 			for (int i = 0; i < 3; i++) {
 				transformedArray[i] = multiplyMatrixWithVec4(cumulativeTransformations, Vec4(vertexArray[i]->x, vertexArray[i]->y, vertexArray[i]->z, 1, vertexArray[i]->colorId));
 				double t = transformedArray[i].t;
@@ -79,13 +84,16 @@ void Scene::forwardRenderingPipeline(Camera *camera)
 					visibilityArray[i] = clip(1, -1, 1, -1, 1, -1,
 						transformedArray[i],(i == 2 ? transformedArray[0] : transformedArray[i + 1]),
 						colorArray[i],(i == 2 ? colorArray[0] : colorArray[i + 1]));
+					
 				}
+
 
 				Vec4 projectedArray[3];
 
 				for (int i = 0; i < 3; i++) {
 					projectedArray[i] = multiplyMatrixWithVec4(viewportTransformation,transformedArray[i]);
 				}
+
 
 				for (int i = 0; i < 3; i++) {
 					if (visibilityArray[i]) {

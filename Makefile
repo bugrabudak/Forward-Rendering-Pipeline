@@ -1,2 +1,2 @@
 rasterizer:
-	g++ *.cpp -o rasterizer
+	g++ -g *.cpp -o rasterizer

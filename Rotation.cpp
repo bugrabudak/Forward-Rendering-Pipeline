@@ -44,14 +44,14 @@ Rotation::Rotation(int rotationId, double angle, double x, double y, double z)
 }
 
 Matrix4* Rotation::getRotationMatrices() {
-    Matrix4 arr[3];
-    double smallest = std::min(this->ux, std::min(this->uy, this->uz));
+    Matrix4* arr = new Matrix4[3];
+    double smallest = min(abs(this->ux), min(abs(this->uy), abs(this->uz)));
     Vec3 v;
     Vec3 u = Vec3(this->ux, this->uy, this->uz, 0);
 
-    if (smallest == this->ux) {
+    if (smallest == abs(this->ux)) {
         v = Vec3(0, -(this->uz), this->uy, 0);
-    } else if (smallest == this->uy) {
+    } else if (smallest == abs(this->uy)) {
         v =  Vec3(-(this->uz), 0, this->ux, 0);
     } else {
         v = Vec3(-(this->uy), this->ux, 0, 0);

@@ -215,16 +215,16 @@ Matrix4 getModelingTransformationMatrix(Camera* camera, Mesh* mesh, vector<Trans
         int transformationID = mesh->transformationIds[i];
         
         if (type == 't') {
-            Matrix4 translationMatrix = translations[i - 1]->getTranslationMatrix();
+            Matrix4 translationMatrix = translations[transformationID - 1]->getTranslationMatrix();
             result = multiplyMatrixWithMatrix(translationMatrix, result);
         } else if (type == 'r') {
             // Transformation matrix is 0th, rotation is 1st and transformation inverse is the 2nd element.
-            Matrix4* rotationMatrices = rotations[i - 1]->getRotationMatrices();
+            Matrix4* rotationMatrices = rotations[transformationID - 1]->getRotationMatrices();
             Matrix4 r1 = multiplyMatrixWithMatrix(rotationMatrices[1], rotationMatrices[0]);
             Matrix4 r2 = multiplyMatrixWithMatrix(rotationMatrices[2], r1);
             result = multiplyMatrixWithMatrix(r2, result);
         } else {
-            Matrix4 scalingMatrix = scalings[i - 1]->getScalingMatrix();
+            Matrix4 scalingMatrix = scalings[transformationID - 1]->getScalingMatrix();
             result = multiplyMatrixWithMatrix(scalingMatrix, result);
         }
     }
@@ -233,8 +233,8 @@ Matrix4 getModelingTransformationMatrix(Camera* camera, Mesh* mesh, vector<Trans
 
 Matrix4 getViewportTransformationMatrix(Camera * camera) {
     double viewportArray[4][4] = {
-        { camera->horRes / 2.0, 0, 0, ((camera->horRes - 1) / 2.0) + camera->left },
-        { 0, camera->verRes / 2.0, 0, ((camera->verRes - 1) / 2.0) - camera->bottom },
+        { camera->horRes / 2.0, 0, 0, ((camera->horRes - 1) / 2.0) },
+        { 0, camera->verRes / 2.0, 0, ((camera->verRes - 1) / 2.0) },
         { 0, 0, 0.5, 0.5 },
         { 0, 0, 0, 1 }
     };
@@ -244,17 +244,19 @@ Matrix4 getViewportTransformationMatrix(Camera * camera) {
 }
 
 Matrix4 getCameraTransformationMatrix(Camera * camera) {
-    double firstArray[4][4] = {{1, 0, 0, -(camera->pos.x)},
-                    {0, 1, 0, -(camera->pos.y)},
-                    {0, 0, 1, -(camera->pos.z)},
-                    {0, 0, 0, 1}};
+    double firstArray[4][4] = {
+        {1, 0, 0, -(camera->pos.x)},
+        {0, 1, 0, -(camera->pos.y)},
+        {0, 0, 1, -(camera->pos.z)},
+        {0, 0, 0, 1}
+    };
     double secondArray[4][4] = {{camera->u.x, camera->u.y, camera->u.z, 0},
                         {camera->v.x, camera->v.y, camera->v.z, 0},
                         {camera->w.x, camera->w.y, camera->w.z, 0},
                         {0, 0, 0, 1}};
     Matrix4 first = Matrix4(firstArray);
     Matrix4 second = Matrix4(secondArray);
-    return multiplyMatrixWithMatrix(first, second);
+    return multiplyMatrixWithMatrix(second, first);
 }
 
 Matrix4 getPerspectiveProjectionTransformationMatrix(Camera * camera) {
@@ -378,7 +380,77 @@ double lineEquation(Vec4 v_0, Vec4 v_1, double x, double y) {
     return ((v_0.y - v_1.y) * x) + ((v_1.x - v_0.x) * y) + v_0.x * v_1.y - v_0.y * v_1.x;
 }
 
-void lineRasterization(vector< vector<Color> >& image, Vec4& first, Vec4& second, Color& firstColor, Color& secondColor) {
+void rasterize(vector< vector<Color> >& image, Vec4 first, Vec4 second, Color firstColor, Color secondColor) {
+
+}
+
+void lineRasterization(vector< vector<Color> >& image, Vec4 first, Vec4 second, Color firstColor, Color secondColor) {
+    double slope = abs(second.y - first.y) / abs(second.x - first.x);
+    int d, incrAmount = 1;
+    Color dc, color;
+
+    if (slope <= 1) {
+        if (second.x < first.x) {
+            Vec4 temp = first;
+            first = second;
+            second = temp;
+            Color temp2 = firstColor;
+            firstColor = secondColor;
+            secondColor = temp2;
+        }
+        if (second.y < first.y) {
+            incrAmount = -1;
+        }
+
+        int y = first.y;
+        color = firstColor;
+        d = first.y - second.y + 0.5 * incrAmount * (second.x - first.x);
+        dc = (secondColor - firstColor) / (second.x - first.x);
+        for (int x = first.x; x <= second.x; x++) {
+            image[x][y] = color;
+            if (d * incrAmount < 0) { // choose NE
+                y += incrAmount;
+                d += first.y - second.y + incrAmount * (second.x - first.x);
+            }
+            else // choose E
+                d += first.y - second.y;
+            color = color + dc;
+        }
+    }
+    else {
+        if (second.y < first.y) {
+            Vec4 temp = first;
+            first = second;
+            second = temp;
+            Color temp2 = firstColor;
+            firstColor = secondColor;
+            secondColor = temp2;
+        }
+        if (second.x < first.x) {
+            incrAmount = -1;
+        }
+
+        int x = first.x;
+        color = firstColor;
+        d = (second.x - first.x) + (incrAmount * 0.5 * (first.y - second.y));
+        dc = (secondColor - firstColor) / (second.y - first.y);
+
+        for (int y = first.y; y <= second.y; y++) {
+            image[x][y] = color;
+            if (d * incrAmount > 0) {
+                x += incrAmount;
+                d += (second.x - first.x) + (incrAmount * (first.y - second.y));
+            }
+            else
+                d += (second.x - first.x);
+            color = color + dc;
+        }
+    }
+}
+
+
+
+/*
     Vec4 v_0;
     Vec4 v_1;
     double slope = (second.y - first.y) / (second.x - first.x);
@@ -387,11 +459,13 @@ void lineRasterization(vector< vector<Color> >& image, Vec4& first, Vec4& second
 
     if (abs(slope) <= 1) {
         if (first.x > second.x) {
+            //cout << "v0 second " << endl;
             v_0 = second;
             v_1 = first;
             vertexColor = secondColor;
             difference = (firstColor - secondColor) / (v_1.x - v_0.x);
         } else {
+            //cout << "v0 first " << endl;
             v_0 = first;
             v_1 = second;
             vertexColor = firstColor;
@@ -400,7 +474,8 @@ void lineRasterization(vector< vector<Color> >& image, Vec4& first, Vec4& second
         
         int y = v_0.y;
         if (v_1.y > v_0.y) {
-            for (int x = v_0.x; x < v_1.x; x++) {
+            for (int x = v_0.x; x <= v_1.x; x++) {
+                //cout << x << "- 1 - " << y << endl;
                 image[x][y] = vertexColor;
                 if (lineEquation(v_0, v_1, x + 1, y + 0.5) < 0) {
                     y++;
@@ -408,7 +483,8 @@ void lineRasterization(vector< vector<Color> >& image, Vec4& first, Vec4& second
                 vertexColor = vertexColor + difference;
             }
         } else {
-            for (int x = v_0.x; x < v_1.x; x++) {
+            for (int x = v_0.x; x <= v_1.x; x++) {
+                //cout << x << "- 2 -" << y << endl;
                 image[x][y] = vertexColor;
                 if (lineEquation(v_0, v_1, x + 1, y - 0.5) < 0) {
                     y--;
@@ -432,7 +508,8 @@ void lineRasterization(vector< vector<Color> >& image, Vec4& first, Vec4& second
         
         int x = v_0.x;
         if (v_1.x > v_0.x) {
-            for (int y = v_0.y; y < v_1.y; y++) {
+            for (int y = v_0.y; y <= v_1.y; y++) {
+                //cout << x << "-3-" << y << endl;
                 image[x][y] = vertexColor;
                 if (lineEquation(v_0, v_1, x + 0.5, y + 1) < 0) {
                     x++;
@@ -440,7 +517,8 @@ void lineRasterization(vector< vector<Color> >& image, Vec4& first, Vec4& second
                 vertexColor = vertexColor + difference;
             }
         } else {
-            for (int y = v_0.y; y < v_1.y; y++) {
+            for (int y = v_0.y; y <= v_1.y; y++) {
+                //cout << x << "-4-" << y << endl;
                 image[x][y] = vertexColor;
                 if (lineEquation(v_0, v_1, x - 0.5, y + 1) < 0) {
                     x--;
@@ -449,5 +527,5 @@ void lineRasterization(vector< vector<Color> >& image, Vec4& first, Vec4& second
             }
         }
     }
-}
+    */
 

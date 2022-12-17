@@ -99,6 +99,8 @@ Matrix4 getCumulativeTransformations(Matrix4&, Matrix4&, Matrix4&);
 
 bool isCulled(Vec4* transformedArray);
 
-void lineRasterization(std::vector< std::vector<Color> > image, Vec4 v_0, Vec4 v_1, Color c_0, Color c_1);
+void rasterize(vector< vector<Color> >& image, Vec4 first, Vec4 second, Color firstColor, Color secondColor);
+
+void lineRasterization(vector< vector<Color> >& image, Vec4 first, Vec4 second, Color firstColor, Color secondColor);
 
 #endif
